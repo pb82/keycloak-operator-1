@@ -100,29 +100,32 @@ func (r *ReconcileKeycloak) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	desirecClusterState := r.buildDesiredClusterState(instance)
+	desiredClusterState := r.buildDesiredClusterState(instance)
+
 	runner := common.NewActionRunner(r.client, log)
-	err = runner.RunAll(desirecClusterState)
+	err = runner.RunAll(desiredClusterState)
 
 	if err != nil {
 		log.Info(fmt.Sprint("\u274C desired cluster state not yet met"))
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, err
 	}
 
 	log.Info(fmt.Sprint("\u2713 desired cluster state met"))
-	return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
+	return reconcile.Result{RequeueAfter: 5 * time.Second}, nil
 }
 
 func (r *ReconcileKeycloak) buildDesiredClusterState(cr *kc.Keycloak) common.DesiredClusterState {
-	demoConfigMap := keycloak.DemoConfigMap(cr)
-
 	d := common.DesiredClusterState{}
 
-	d = append(d, demoConfigMap.Exists("check if demo config map exists"))
-	d = append(d, demoConfigMap.Branch(common.On{
-		Success: demoConfigMap.Update("update existing config map"),
-		Fail:    demoConfigMap.Create("create new demo config map"),
+	cm := keycloak.DemoConfigMap(cr)
+	w := common.WrappedConfigMap{Ref: cm}
+
+	d = append(d, w.Exists("check if demo config map exists"))
+	d = append(d, w.Branch(common.On{
+		Success: w.Update("update existing config map"),
+		Fail:    w.Create("create new demo config map"),
 	}))
+	d = append(d, w.EnsureReady("ensure config map is ready"))
 
 	return d
 }

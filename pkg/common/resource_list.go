@@ -7,39 +7,39 @@ type On struct {
 	Fail    Action
 }
 
-type KcResource interface {
-	Exists(msg string) Action
-	Create(msg string) Action
-	Update(msg string) Action
-	Branch(on On) Action
-}
-
-type KcConfigMap struct {
+type WrappedConfigMap struct {
 	Ref v1.ConfigMap
 }
 
-func (i KcConfigMap) Exists(msg string) Action {
+func (i WrappedConfigMap) Exists(msg string) Action {
 	return &ExistsConfigMapAction{
 		ref: &i.Ref,
 		msg: msg,
 	}
 }
 
-func (i KcConfigMap) Update(msg string) Action {
+func (i WrappedConfigMap) Update(msg string) Action {
 	return &UpdateConfigMapAction{
 		ref: &i.Ref,
 		msg: msg,
 	}
 }
 
-func (i KcConfigMap) Create(msg string) Action {
+func (i WrappedConfigMap) Create(msg string) Action {
 	return &CreateConfigMapAction{
 		ref: &i.Ref,
 		msg: msg,
 	}
 }
 
-func (i KcConfigMap) Branch(on On) Action {
+func (i WrappedConfigMap) EnsureReady(msg string) Action {
+	return &EnsureReadyConfigMapAction{
+		ref: &i.Ref,
+		msg: msg,
+	}
+}
+
+func (i WrappedConfigMap) Branch(on On) Action {
 	return &OnAction{
 		ref:     &i.Ref,
 		success: on.Success,

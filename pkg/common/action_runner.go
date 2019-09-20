@@ -35,6 +35,12 @@ type UpdateConfigMapAction struct {
 	msg string
 }
 
+type EnsureReadyConfigMapAction struct {
+	ref *v1.ConfigMap
+	msg string
+}
+
+
 type OnAction struct {
 	ref     *v1.ConfigMap
 	success Action
@@ -84,7 +90,12 @@ func (i *CreateConfigMapAction) run(runner *ActionRunner) (string, error) {
 		return i.msg, runner.lastError
 	}
 
-	return i.msg, runner.client.Create(context.TODO(), i.ref)
+	err := runner.client.Create(context.TODO(), i.ref)
+	if err != nil {
+		return i.msg, err
+	}
+
+	return i.msg, nil
 }
 
 func (i *UpdateConfigMapAction) run(runner *ActionRunner) (string, error) {
@@ -104,4 +115,14 @@ func (i *OnAction) run(runner *ActionRunner) (string, error) {
 		runner.lastError = nil
 		return i.success.run(runner)
 	}
+}
+
+func (i *EnsureReadyConfigMapAction) run(runner *ActionRunner) (string, error) {
+	// Don't continue if there was a previous error
+	if runner.lastError != nil {
+		return i.msg, runner.lastError
+	}
+
+	// Config maps don't have a ready state. If they exist they are always ready
+	return i.msg, nil
 }
