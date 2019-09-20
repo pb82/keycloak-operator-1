@@ -40,7 +40,6 @@ type EnsureReadyConfigMapAction struct {
 	msg string
 }
 
-
 type OnAction struct {
 	ref     *v1.ConfigMap
 	success Action
